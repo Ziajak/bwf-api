@@ -5,6 +5,7 @@ from django.urls import path
 
 router = routers.DefaultRouter()
 router.register(r'groups', views.GroupViewset)
+router.register(r'events', views.EventViewset)
 
 
 urlpatterns = [
