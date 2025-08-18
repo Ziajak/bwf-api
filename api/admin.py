@@ -6,7 +6,7 @@ class GroupAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'location', 'description')
 
 
-@admin.register(Group)
+@admin.register(Event)
 class EventAdmin(admin.ModelAdmin):
-    fields = ('id', 'team1', 'team2', 'time', 'score1', 'score2', 'group')
-    list_display = ('team1', 'team2', 'time', 'score1', 'score2', 'group')
+    fields = ('team1', 'team2', 'time', 'score1', 'score2', 'group')
+    list_display = ('id', 'team1', 'team2', 'time', 'score1', 'score2', 'group')
