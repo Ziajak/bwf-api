@@ -1,8 +1,10 @@
 from django.shortcuts import render
 from rest_framework import viewsets
 from .models import Group, Event
-from .serializers import GroupSerializer, EventSerializer, GroupFullSerializer
+from .serializers import GroupSerializer, EventSerializer, GroupFullSerializer, UserSerializer
 from rest_framework.response import Response
+from rest_framework.authtoken.views import ObtainAuthToken
+from rest_framework.authtoken.models import Token
 class GroupViewset(viewsets.ModelViewSet):
     queryset = Group.objects.all()
     serializer_class = GroupSerializer
@@ -17,3 +19,12 @@ class GroupViewset(viewsets.ModelViewSet):
 class EventViewset(viewsets.ModelViewSet):
     queryset = Event.objects.all()
     serializer_class = EventSerializer
+
+class CustomObtainAuthToken(ObtainAuthToken):
+    def post(self, request, *args, **kwargs):
+        response = super(CustomObtainAuthToken, self).post(request, *args, **kwargs)
+        token = response.data['token']
+        user = Token.objects.get(key=token).user
+        userSerializer = UserSerializer(user, many=False)
+        return Response({'token': token,
+                         'user': userSerializer.data})
