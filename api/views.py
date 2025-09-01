@@ -1,11 +1,15 @@
 from django.shortcuts import render
 from rest_framework import viewsets
-from .models import Group, Event, UserProfile
+from .models import Group, Event, UserProfile, User
 from .serializers import (GroupSerializer, EventSerializer, GroupFullSerializer,
                           UserSerializer, UserProfileSerializer)
 from rest_framework.response import Response
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
+
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
 
 class UserProfileViewset(viewsets.ModelViewSet):
     queryset = UserProfile.objects.all()
