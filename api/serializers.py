@@ -4,9 +4,10 @@ from django.contrib.auth.models import User
 from rest_framework.authtoken.models import Token
 
 class UserProfileSerializer(serializers.ModelSerializer):
+    image = serializers.ImageField(allow_null=True)
     class Meta:
         model = UserProfile
-        fields = ('image',)
+        fields = ('image', 'is_premium', 'bio')
 class UserSerializer(serializers.ModelSerializer):
     profile = UserProfileSerializer()
     class Meta:
