@@ -7,7 +7,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
     image = serializers.ImageField(allow_null=True)
     class Meta:
         model = UserProfile
-        fields = ('image', 'is_premium', 'bio')
+        fields = ('id', 'image', 'is_premium', 'bio')
 class UserSerializer(serializers.ModelSerializer):
     profile = UserProfileSerializer()
     class Meta:
