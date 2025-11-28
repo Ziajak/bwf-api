@@ -7,12 +7,18 @@ from .serializers import (GroupSerializer, EventSerializer, GroupFullSerializer,
 from rest_framework.response import Response
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.permissions import AllowAny, IsAuthenticated, IsAuthenticatedOrReadOnly
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    authentication_classes = (TokenAuthentication, )
+    permission_classes = (AllowAny, )
 
-    @action(methods=['PUT'], detail=True, serializer_class=ChangePasswordSerializer)
+    @action(methods=['PUT'], detail=True, serializer_class=ChangePasswordSerializer,
+            permission_classes=[IsAuthenticated]
+           )
     def change_pass(self, request, pk):
         user = User.objects.get(pk=pk)
         serializer = ChangePasswordSerializer(data=request.data)
@@ -29,10 +35,14 @@ class UserViewSet(viewsets.ModelViewSet):
 class UserProfileViewset(viewsets.ModelViewSet):
     queryset = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = (IsAuthenticated,)
 
 class GroupViewset(viewsets.ModelViewSet):
     queryset = Group.objects.all()
     serializer_class = GroupSerializer
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = (IsAuthenticatedOrReadOnly,)
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -44,6 +54,8 @@ class GroupViewset(viewsets.ModelViewSet):
 class EventViewset(viewsets.ModelViewSet):
     queryset = Event.objects.all()
     serializer_class = EventSerializer
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = (IsAuthenticatedOrReadOnly,)
 
 class CustomObtainAuthToken(ObtainAuthToken):
     def post(self, request, *args, **kwargs):
