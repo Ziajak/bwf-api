@@ -1,9 +1,10 @@
 from django.shortcuts import render
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
-from .models import Group, Event, UserProfile, User
+from .models import Group, Event, UserProfile, User, Member
 from .serializers import (GroupSerializer, EventSerializer, GroupFullSerializer,
-                          UserSerializer, UserProfileSerializer, ChangePasswordSerializer)
+                          UserSerializer, UserProfileSerializer, ChangePasswordSerializer,
+                          MemberSerializer)
 from rest_framework.response import Response
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
@@ -65,3 +66,10 @@ class CustomObtainAuthToken(ObtainAuthToken):
         userSerializer = UserSerializer(user, many=False)
         return Response({'token': token,
                          'user': userSerializer.data})
+
+
+class MemberViewset(viewsets.ModelViewSet):
+    queryset = Member.objects.all()
+    serializer_class = MemberSerializer
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = (IsAuthenticatedOrReadOnly,)

@@ -22,3 +22,14 @@ class Event(models.Model):
     score1 = models.IntegerField(null=True, blank=True)
     score2 = models.IntegerField(null=True, blank=True)
     group = models.ForeignKey(Group, related_name='events', on_delete=models.CASCADE)
+
+class Member(models.Model):
+    group = models.ForeignKey(Group, related_name='members', on_delete=models.CASCADE)
+    user = models.ForeignKey(User, related_name='members_of', on_delete=models.CASCADE)
+    admin = models.BooleanField(default=False)
+
+    class Meta:
+        unique_together = (('user', 'group'))
+        indexes = [
+            models.Index(fields=['user', 'group']),
+        ]
