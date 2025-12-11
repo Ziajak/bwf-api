@@ -81,6 +81,24 @@ class MemberViewset(viewsets.ModelViewSet):
             response = {'message': 'Wrong params'}
             return Response(response, status=status.HTTP_400_BAD_REQUEST)
 
+    @action(methods=['post'], detail=False)
+    def leave(self, request):
+        if 'group' in request.data and 'user' in request.data:
+            try:
+                group = Group.objects.get(id=request.data['group'])
+                user = User.objects.get(id=request.data['user'])
+
+                member = Member.objects.get(group=group, user=user)
+                member.delete()
+                response = {'message': 'Left group'}
+                return Response(response, status=status.HTTP_200_OK)
+            except:
+                response = {'message': 'Cannot leave group'}
+                return Response(response, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            response = {'message': 'Wrong params'}
+            return Response(response, status=status.HTTP_400_BAD_REQUEST)
+
 class CustomObtainAuthToken(ObtainAuthToken):
     def post(self, request, *args, **kwargs):
         response = super(CustomObtainAuthToken, self).post(request, *args, **kwargs)
