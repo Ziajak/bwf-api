@@ -1,10 +1,10 @@
 from django.shortcuts import render
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
-from .models import Group, Event, UserProfile, User, Member
+from .models import Group, Event, UserProfile, User, Member, Comment
 from .serializers import (GroupSerializer, EventSerializer, GroupFullSerializer,
                           UserSerializer, UserProfileSerializer, ChangePasswordSerializer,
-                          MemberSerializer)
+                          MemberSerializer, CommentSerializer)
 from rest_framework.response import Response
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
@@ -38,6 +38,11 @@ class UserProfileViewset(viewsets.ModelViewSet):
     serializer_class = UserProfileSerializer
     authentication_classes = (TokenAuthentication,)
     permission_classes = (IsAuthenticated,)
+
+class CommentViewset(viewsets.ModelViewSet):
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
+
 
 class GroupViewset(viewsets.ModelViewSet):
     queryset = Group.objects.all()
