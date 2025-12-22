@@ -1,10 +1,11 @@
 from django.shortcuts import render
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
-from .models import Group, Event, UserProfile, User, Member, Comment
+from .models import Group, Event, UserProfile, User, Member, Comment, Bet
 from .serializers import (GroupSerializer, EventSerializer, GroupFullSerializer,
                           UserSerializer, UserProfileSerializer, ChangePasswordSerializer,
-                          MemberSerializer, CommentSerializer)
+                          MemberSerializer, CommentSerializer, EventFullSerializer,
+                          BetSerializer)
 from rest_framework.response import Response
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
@@ -63,6 +64,11 @@ class EventViewset(viewsets.ModelViewSet):
     authentication_classes = (TokenAuthentication,)
     permission_classes = (IsAuthenticatedOrReadOnly,)
 
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = EventFullSerializer(instance, many=False, context={'request': request})
+        return Response(serializer.data)
+
 class MemberViewset(viewsets.ModelViewSet):
     queryset = Member.objects.all()
     serializer_class = MemberSerializer
@@ -103,6 +109,12 @@ class MemberViewset(viewsets.ModelViewSet):
         else:
             response = {'message': 'Wrong params'}
             return Response(response, status=status.HTTP_400_BAD_REQUEST)
+
+class BetViewset(viewsets.ModelViewSet):
+    queryset = Bet.objects.all()
+    serializer_class = BetSerializer
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = (IsAuthenticatedOrReadOnly,)
 
 class CustomObtainAuthToken(ObtainAuthToken):
     def post(self, request, *args, **kwargs):
