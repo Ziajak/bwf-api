@@ -115,8 +115,8 @@ class MemberViewset(viewsets.ModelViewSet):
 class BetViewset(viewsets.ModelViewSet):
     queryset = Bet.objects.all()
     serializer_class = BetSerializer
-    # authentication_classes = (TokenAuthentication,)
-    # permission_classes = (IsAuthenticatedOrReadOnly,)
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = (IsAuthenticatedOrReadOnly,)
 
     def create(self, request, *args, **kwargs):
         response = {'message': "Metod not allowed"}
@@ -134,10 +134,10 @@ class BetViewset(viewsets.ModelViewSet):
         event = serializer.validated_data['event']
         score1 = serializer.validated_data['score1']
         score2 = serializer.validated_data['score2']
-
-        if event.time >= timezone.now():
+        if event.time < timezone.now():
             return Response(
-                {"message": "You can't place a bet. Too late!"},
+                {"message": f"You can't place a bet. Too late!"
+                 },
                 status=status.HTTP_400_BAD_REQUEST
             )
 
