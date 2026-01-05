@@ -1,11 +1,12 @@
 from django.shortcuts import render
 from rest_framework import viewsets, status
+from django.utils import timezone
 from rest_framework.decorators import action
 from .models import Group, Event, UserProfile, User, Member, Comment, Bet
 from .serializers import (GroupSerializer, EventSerializer, GroupFullSerializer,
                           UserSerializer, UserProfileSerializer, ChangePasswordSerializer,
                           MemberSerializer, CommentSerializer, EventFullSerializer,
-                          BetSerializer)
+                          BetSerializer, PlaceBetSerializer)
 from rest_framework.response import Response
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
@@ -127,43 +128,47 @@ class BetViewset(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['POST'], url_path='place_bet')
     def place_bet(self, request):
-        if 'event' in request.data and 'score1' in request.data and 'score2' in request.data:
-            event_id = request.data['event']
-            event = Event.objects.get(id=event_id)
+        serializer = PlaceBetSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
-            in_group = self.checkIfUserInGroup(event, request.user)
+        event = serializer.validated_data['event']
+        score1 = serializer.validated_data['score1']
+        score2 = serializer.validated_data['score2']
 
+        if event.time >= timezone.now():
+            return Response(
+                {"message": "You can't place a bet. Too late!"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
-            if event.time > datetime.now() and in_group:
-                score1 = request.data['score1']
-                score2 = request.data['score2']
+        if not self.checkIfUserInGroup(event.group, request.user):
+            return Response(
+                {"message": "User not in group"},
+                status=status.HTTP_403_FORBIDDEN
+            )
 
-                try:
-                    # UPDATE scenario
-                    my_bet = Bet.objects.get(event=event_id, user=request.user.id)
-                    my_bet.score1 = score1
-                    my_bet.score2 = score2
-                    my_bet.save()
-                    serializer = BetSerializer(my_bet, many=False)
-                    response = {'message': "Bet Updated", "new": False, "result": serializer.data}
-                    return Response(response, status=status.HTTP_200_OK)
-                except:
-                    # CREATE SCENARIO
-                    my_bet = Bet.objects.create(event=event, user=request.user, score1=score1,
-                                                score2=score2)
-                    serializer = BetSerializer(my_bet, many=False)
-                    response = {'message': "Bet Created", "new": True, "result": serializer.data}
-                    return Response(response, status=status.HTTP_200_OK)
-            else:
-                response = {'message': "You can't place a bet. Too late!"}
-                return Response(response, status=status.HTTP_400_BAD_REQUEST)
+        bet, created = Bet.objects.update_or_create(
+            event=event,
+            user=request.user,
+            defaults={
+                "score1": score1,
+                "score2": score2
+            }
+        )
 
+        response_serializer = BetSerializer(bet)
 
-        else:
-            response = {'message': "Wrong params"}
-            return Response(response, status=status.HTTP_400_BAD_REQUEST)
-    def checkIfUserInGroup(self, event, user):
-        return Member.objects.filter(user=user, group=event.group).exists()
+        return Response(
+            {
+                "message": "Bet Created" if created else "Bet Updated",
+                "new": created,
+                "result": response_serializer.data
+            },
+            status=status.HTTP_200_OK
+        )
+
+    def checkIfUserInGroup(self, group, user):
+        return Member.objects.filter(user=user, group=group).exists()
 
 
 

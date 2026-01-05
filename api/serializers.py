@@ -6,6 +6,13 @@ from rest_framework.authtoken.models import Token
 class ChangePasswordSerializer(serializers.Serializer):
     old_password = serializers.CharField(required=True)
     new_password = serializers.CharField(required=True)
+
+class PlaceBetSerializer(serializers.Serializer):
+    event = serializers.PrimaryKeyRelatedField(
+        queryset=Event.objects.all()
+    )
+    score1 = serializers.IntegerField()
+    score2 = serializers.IntegerField()
 class UserProfileSerializer(serializers.ModelSerializer):
     image = serializers.ImageField(allow_null=True)
     class Meta:
