@@ -42,7 +42,7 @@ class BetSerializer(serializers.ModelSerializer):
     user = UserSerializer(many=False)
     class Meta:
         model = Bet
-        fields = ('id', 'user', 'event', 'score1', 'score2')
+        fields = ('id', 'user', 'event', 'score1', 'score2', 'points')
 
 
 class MemberSerializer(serializers.ModelSerializer):
