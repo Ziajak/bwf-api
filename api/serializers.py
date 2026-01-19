@@ -7,6 +7,10 @@ class ChangePasswordSerializer(serializers.Serializer):
     old_password = serializers.CharField(required=True)
     new_password = serializers.CharField(required=True)
 
+class SetResultsSerializer(serializers.Serializer):
+    score1 = serializers.IntegerField()
+    score2 = serializers.IntegerField()
+
 class PlaceBetSerializer(serializers.Serializer):
     event = serializers.PrimaryKeyRelatedField(
         queryset=Event.objects.all()
@@ -32,23 +36,13 @@ class UserSerializer(serializers.ModelSerializer):
         Token.objects.create(user=user)
         return user
 
-class EventSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Event
-        fields = ('id', 'team1', 'team2', 'time', 'group')
+
 
 class BetSerializer(serializers.ModelSerializer):
     user = UserSerializer(many=False)
     class Meta:
         model = Bet
         fields = ('id', 'user', 'event', 'score1', 'score2')
-
-class EventFullSerializer(serializers.ModelSerializer):
-    bets = BetSerializer(many=True)
-    class Meta:
-        model = Event
-        fields = ('id', 'team1', 'team2', 'time', 'score1', 'score2', 'group', 'bets')
-
 
 
 class MemberSerializer(serializers.ModelSerializer):
@@ -63,9 +57,21 @@ class CommentSerializer(serializers.ModelSerializer):
         fields = ('user', 'group', 'description', 'time')
 
 class GroupSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = Group
         fields = ('id', 'name', 'location', 'description')
+
+class EventFullSerializer(serializers.ModelSerializer):
+    bets = BetSerializer(many=True)
+    class Meta:
+        model = Event
+        fields = ('id', 'team1', 'team2', 'time', 'score1', 'score2', 'group', 'bets')
+
+class EventSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Event
+        fields = ('id', 'team1', 'team2', 'time', 'group')
 
 class GroupFullSerializer(serializers.ModelSerializer):
     events = EventSerializer(many=True)

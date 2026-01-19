@@ -1,12 +1,13 @@
 from django.shortcuts import render
 from rest_framework import viewsets, status
 from django.utils import timezone
+from .permission import IsGroupAdminAndEventFinished
 from rest_framework.decorators import action
 from .models import Group, Event, UserProfile, User, Member, Comment, Bet
 from .serializers import (GroupSerializer, EventSerializer, GroupFullSerializer,
                           UserSerializer, UserProfileSerializer, ChangePasswordSerializer,
                           MemberSerializer, CommentSerializer, EventFullSerializer,
-                          BetSerializer, PlaceBetSerializer)
+                          BetSerializer, PlaceBetSerializer, SetResultsSerializer)
 from rest_framework.response import Response
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
@@ -64,12 +65,27 @@ class EventViewset(viewsets.ModelViewSet):
     queryset = Event.objects.all()
     serializer_class = EventSerializer
     authentication_classes = (TokenAuthentication,)
-    permission_classes = (IsAuthenticatedOrReadOnly,)
+    permission_classes = (IsAuthenticatedOrReadOnly, IsGroupAdminAndEventFinished)
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         serializer = EventFullSerializer(instance, many=False, context={'request': request})
         return Response(serializer.data)
+
+    @action(detail=True, methods=['PUT'])
+    def set_results(self, request, pk=None):
+        event = self.get_object()
+
+        serializer = SetResultsSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        event.score1 = serializer.validated_data['score1']
+        event.score2 = serializer.validated_data['score2']
+        event.save()
+        return Response(
+            EventFullSerializer(event, context={'request': request}).data
+        )
+
 
 class MemberViewset(viewsets.ModelViewSet):
     queryset = Member.objects.all()
