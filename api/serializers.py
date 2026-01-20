@@ -2,6 +2,7 @@ from rest_framework import serializers
 from .models import Group, Event, UserProfile, Member, Comment, Bet
 from django.contrib.auth.models import User
 from rest_framework.authtoken.models import Token
+from django.db.models import Sum
 
 class ChangePasswordSerializer(serializers.Serializer):
     old_password = serializers.CharField(required=True)
@@ -90,10 +91,10 @@ class GroupFullSerializer(serializers.ModelSerializer):
         people_points = []
         members = obj.members.all()
         for m in members:
-            points = 0
+            points = Bet.objects.filter(event__group=obj, user=m.user).aggregate(pts=Sum('points'))
             member_serialized = MemberSerializer(m, many=False)
             member_data = member_serialized.data
-            member_data['points'] = points
+            member_data['points'] = points['pts'] or 0
 
             people_points.append(member_data)
 
