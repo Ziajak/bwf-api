@@ -3,6 +3,7 @@ from .models import Group, Event, UserProfile, Member, Comment, Bet
 from django.contrib.auth.models import User
 from rest_framework.authtoken.models import Token
 from django.db.models import Sum
+from django.utils import timezone
 
 class ChangePasswordSerializer(serializers.Serializer):
     old_password = serializers.CharField(required=True)
@@ -64,10 +65,35 @@ class GroupSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'location', 'description')
 
 class EventFullSerializer(serializers.ModelSerializer):
-    bets = BetSerializer(many=True)
+    bets = serializers.SerializerMethodField()
     class Meta:
         model = Event
         fields = ('id', 'team1', 'team2', 'time', 'score1', 'score2', 'group', 'bets')
+
+    def get_bets(self, obj):
+        request = self.context.get('request')
+        user = request.user if request else None
+
+        if obj.time < timezone.now():
+            bets = obj.bets.all()
+            return BetSerializer(bets, many=True).data
+
+        if user and user.is_authenticated:
+            is_admin = Member.objects.filter(
+                group=obj.group,
+                user=user,
+                admin=True
+            ).exists()
+
+            if is_admin:
+                bets = obj.bets.all()
+            else:
+                bets = obj.bets.filter(user=user)
+        else:
+            bets = obj.bets.none()
+
+        return BetSerializer(bets, many=True).data
+
 
 class EventSerializer(serializers.ModelSerializer):
     class Meta:
