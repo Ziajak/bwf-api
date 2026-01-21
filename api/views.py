@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from rest_framework import viewsets, status
 from django.utils import timezone
-from .permission import IsGroupAdminAndEventFinished
+from .permission import IsGroupAdminForEventCreate
 from rest_framework.decorators import action
 from .models import Group, Event, UserProfile, User, Member, Comment, Bet
 from .serializers import (GroupSerializer, EventSerializer, GroupFullSerializer,
@@ -65,7 +65,8 @@ class EventViewset(viewsets.ModelViewSet):
     queryset = Event.objects.all()
     serializer_class = EventSerializer
     authentication_classes = (TokenAuthentication,)
-    permission_classes = (IsAuthenticatedOrReadOnly, IsGroupAdminAndEventFinished)
+    permission_classes = (IsAuthenticatedOrReadOnly,
+                          IsGroupAdminForEventCreate)
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -82,26 +83,12 @@ class EventViewset(viewsets.ModelViewSet):
         event.score1 = serializer.validated_data['score1']
         event.score2 = serializer.validated_data['score2']
         event.save()
-        self.calculate_points()
+        event.calculate_points()
         return Response(
             EventFullSerializer(event, context={'request': request}).data
         )
 
-    def calculate_points(self):
-        event = self.get_object()
-        bets = event.bets.all()
-        for bet in bets:
-            user_points = 0
-            if bet.score1 == event.score1 and bet.score2 == event.score2:
-                user_points = 3
-            else:
-                score_final = event.score1 - event.score2
-                bet_final = bet.score1 - bet.score2
-                if ((score_final > 0 and bet_final > 0) or (score_final == 0 and bet_final == 0)
-                        or (score_final < 0 and bet_final < 0)):
-                    user_points = 1
-            bet.points = user_points
-            bet.save()
+
 
 class MemberViewset(viewsets.ModelViewSet):
     queryset = Member.objects.all()

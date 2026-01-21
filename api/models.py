@@ -23,6 +23,22 @@ class Event(models.Model):
     score2 = models.IntegerField(null=True, blank=True)
     group = models.ForeignKey(Group, related_name='events', on_delete=models.CASCADE)
 
+    def calculate_points(self):
+        for bet in self.bets.all():
+            points = 0
+            if bet.score1 == self.score1 and bet.score2 == self.score2:
+                points = 3
+            else:
+                score_diff = self.score1 - self.score2
+                bet_diff = bet.score1 - bet.score2
+
+                if ((score_diff > 0 and bet_diff > 0)
+                        or (score_diff == 0 and bet_diff == 0)
+                        or (score_diff < 0 and bet_diff < 0)):
+                    points = 1
+            bet.points = points
+            bet.save()
+
 class Member(models.Model):
     group = models.ForeignKey(Group, related_name='members', on_delete=models.CASCADE)
     user = models.ForeignKey(User, related_name='members_of', on_delete=models.CASCADE)
