@@ -193,11 +193,23 @@ class BetViewset(viewsets.ModelViewSet):
 
 class CustomObtainAuthToken(ObtainAuthToken):
     def post(self, request, *args, **kwargs):
-        response = super(CustomObtainAuthToken, self).post(request, *args, **kwargs)
-        token = response.data['token']
-        user = Token.objects.get(key=token).user
-        userSerializer = UserSerializer(user, many=False)
-        return Response({'token': token,
-                         'user': userSerializer.data})
+        serializer = self.serializer_class(
+            data=request.data,
+            context={'request': request}
+        )
 
+        if not serializer.is_valid():
+            return Response(
+                {'error': 'Invalid username or password'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        user = serializer.validated_data['user']
+        token, _ = Token.objects.get_or_create(user=user)
+
+        userSerializer = UserSerializer(user)
+        return Response({
+            'token': token.key,
+            'user': userSerializer.data
+        })
 
