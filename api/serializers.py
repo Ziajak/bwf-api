@@ -19,6 +19,12 @@ class PlaceBetSerializer(serializers.Serializer):
     )
     score1 = serializers.IntegerField()
     score2 = serializers.IntegerField()
+
+class SetMemberAdminSerializer(serializers.Serializer):
+    user_id = serializers.IntegerField()
+    group_id = serializers.IntegerField()
+    admin = serializers.BooleanField()
+
 class UserProfileSerializer(serializers.ModelSerializer):
     image = serializers.ImageField(allow_null=True)
     class Meta:
@@ -26,10 +32,22 @@ class UserProfileSerializer(serializers.ModelSerializer):
         fields = ('id', 'image', 'is_premium', 'bio')
 class UserSerializer(serializers.ModelSerializer):
     profile = UserProfileSerializer(required=False)
+    members = serializers.SerializerMethodField()
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'password', 'profile')
+        fields = ('id', 'username', 'email', 'password', 'is_superuser', 'members', 'profile')
         extra_kwargs = {'password': {'write_only': True, 'required': False}}
+
+    def get_members(self, obj):
+        members = obj.members_of.all()
+        return [
+            {
+                'group_id': m.group.id,
+                'group_name': m.group.name,
+                'admin': m.admin
+            }
+            for m in members
+        ]
 
     def create(self, validated_data):
         profile_data = validated_data.pop('profile', None)

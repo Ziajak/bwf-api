@@ -1,28 +1,45 @@
 from django.shortcuts import render
 from rest_framework import viewsets, status
 from django.utils import timezone
-from .permission import IsGroupAdminForEventCreate
+from .permission import GroupPermission, IsSuperUserOnly, SetAdminPermission, UserPermission, IsGroupAdminForEventCreate
 from rest_framework.decorators import action
 from .models import Group, Event, UserProfile, User, Member, Comment, Bet
 from .serializers import (GroupSerializer, EventSerializer, GroupFullSerializer,
                           UserSerializer, UserProfileSerializer, ChangePasswordSerializer,
                           MemberSerializer, CommentSerializer, EventFullSerializer,
-                          BetSerializer, PlaceBetSerializer, SetResultsSerializer)
+                          BetSerializer, PlaceBetSerializer, SetResultsSerializer,
+                          SetMemberAdminSerializer)
 from rest_framework.response import Response
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
 from rest_framework.authentication import TokenAuthentication
-from rest_framework.permissions import AllowAny, IsAuthenticated, IsAuthenticatedOrReadOnly
+
 from datetime import datetime
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     authentication_classes = (TokenAuthentication, )
-    permission_classes = (AllowAny, )
+    permission_classes = [UserPermission]
+
+    def get_queryset(self):
+        user = self.request.user
+
+        if user.is_superuser:
+            return User.objects.all()
+
+
+        group_ids = Member.objects.filter(
+            user=user,
+            admin=True
+        ).values_list('group_id', flat=True)
+
+        return User.objects.filter(
+            members_of__group_id__in=group_ids
+        ).distinct()
 
     @action(methods=['PUT'], detail=True, serializer_class=ChangePasswordSerializer,
-            permission_classes=[IsAuthenticated]
+            permission_classes=[UserPermission]
            )
     def change_pass(self, request, pk):
         user = User.objects.get(pk=pk)
@@ -41,7 +58,7 @@ class UserProfileViewset(viewsets.ModelViewSet):
     queryset = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
     authentication_classes = (TokenAuthentication,)
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsSuperUserOnly,)
 
 class CommentViewset(viewsets.ModelViewSet):
     queryset = Comment.objects.all()
@@ -52,7 +69,7 @@ class GroupViewset(viewsets.ModelViewSet):
     queryset = Group.objects.all()
     serializer_class = GroupSerializer
     authentication_classes = (TokenAuthentication,)
-    permission_classes = (IsAuthenticatedOrReadOnly,)
+    permission_classes = (GroupPermission,)
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -65,8 +82,7 @@ class EventViewset(viewsets.ModelViewSet):
     queryset = Event.objects.all()
     serializer_class = EventSerializer
     authentication_classes = (TokenAuthentication,)
-    permission_classes = (IsAuthenticatedOrReadOnly,
-                          IsGroupAdminForEventCreate)
+    permission_classes = (IsGroupAdminForEventCreate,)
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -93,7 +109,7 @@ class EventViewset(viewsets.ModelViewSet):
 class MemberViewset(viewsets.ModelViewSet):
     queryset = Member.objects.all()
     serializer_class = MemberSerializer
-    # authentication_classes = (TokenAuthentication,)
+    authentication_classes = (TokenAuthentication,)
     # permission_classes = (IsAuthenticatedOrReadOnly,)
     @action(methods=['post'], detail=False)
     def join(self, request):
@@ -101,7 +117,6 @@ class MemberViewset(viewsets.ModelViewSet):
             try:
                 group = Group.objects.get(id=request.data['group'])
                 user = User.objects.get(id=request.data['user'])
-
                 member = Member.objects.create(group=group, user=user, admin=False)
                 serializer = MemberSerializer(member, many=False)
                 response = {'message': 'Joined group', 'results': serializer.data}
@@ -131,11 +146,48 @@ class MemberViewset(viewsets.ModelViewSet):
             response = {'message': 'Wrong params'}
             return Response(response, status=status.HTTP_400_BAD_REQUEST)
 
+    @action(
+        detail=False,
+        methods=['patch'],
+        permission_classes=[SetAdminPermission]
+    )
+    def set_admin(self, request):
+        serializer = SetMemberAdminSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user_id = serializer.validated_data['user_id']
+        group_id = serializer.validated_data['group_id']
+        admin = serializer.validated_data['admin']
+
+        try:
+            member = Member.objects.get(
+                user_id=user_id,
+                group_id=group_id
+            )
+        except Member.DoesNotExist:
+            return Response(
+                {"detail": "Member not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        member.admin = admin
+        member.save()
+
+        return Response(
+            {
+                "message": "Admin updated",
+                "user_id": user_id,
+                "group_id": group_id,
+                "admin": admin
+            },
+            status=status.HTTP_200_OK
+        )
+
 class BetViewset(viewsets.ModelViewSet):
     queryset = Bet.objects.all()
     serializer_class = BetSerializer
     authentication_classes = (TokenAuthentication,)
-    permission_classes = (IsAuthenticatedOrReadOnly,)
+    permission_classes = (GroupPermission,)
 
     def create(self, request, *args, **kwargs):
         response = {'message': "Metod not allowed"}
