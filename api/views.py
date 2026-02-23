@@ -187,7 +187,7 @@ class BetViewset(viewsets.ModelViewSet):
     queryset = Bet.objects.all()
     serializer_class = BetSerializer
     authentication_classes = (TokenAuthentication,)
-    permission_classes = (GroupPermission,)
+    #permission_classes = (GroupPermission,)
 
     def create(self, request, *args, **kwargs):
         response = {'message': "Metod not allowed"}
