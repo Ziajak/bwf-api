@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-a$zx98+j_2*m%9up^!p8m_dec5-bl6_4!s1%%#*_8un*gu1jk4
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "0.0.0.0"]
 
 
 # Application definition
@@ -46,13 +46,14 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
+
 ]
 
 ROOT_URLCONF = 'bwf.urls'
@@ -78,13 +79,28 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
 ]
 
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000",
+]
+
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': os.environ.get('POSTGRES_DB'),
+#         'USER': os.environ.get('POSTGRES_USER'),
+#         'PASSWORD': os.environ.get('POSTGRES_PASSWORD'),
+#         'HOST': os.environ.get('POSTGRES_HOST', 'db'),
+#         'PORT': os.environ.get('POSTGRES_PORT', '5432'),
+#     }
+# }
+
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
     }
 }
 
